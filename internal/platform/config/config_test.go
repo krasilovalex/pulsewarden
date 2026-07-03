@@ -19,6 +19,7 @@ func TestLoad(t *testing.T) {
 				Environment:     "local",
 				LogLevel:        "info",
 				ShutdownTimeout: 10 * time.Second,
+				HTTPAddress:     ":8080",
 			},
 		},
 		{
@@ -27,11 +28,13 @@ func TestLoad(t *testing.T) {
 				envEnvironment:     "production",
 				envLogLevel:        "debug",
 				envShutdownTimeout: "30s",
+				envHTTPAddress:     "127.0.0.1:9090",
 			},
 			want: Config{
 				Environment:     "production",
 				LogLevel:        "debug",
 				ShutdownTimeout: 30 * time.Second,
+				HTTPAddress:     "127.0.0.1:9090",
 			},
 		},
 		{
@@ -40,11 +43,13 @@ func TestLoad(t *testing.T) {
 				envEnvironment:     " Staging ",
 				envLogLevel:        " WARN ",
 				envShutdownTimeout: " 15s ",
+				envHTTPAddress:     "127.0.0.1:8081",
 			},
 			want: Config{
 				Environment:     "staging",
 				LogLevel:        "warn",
 				ShutdownTimeout: 15 * time.Second,
+				HTTPAddress:     "127.0.0.1:8081",
 			},
 		},
 		{
@@ -103,6 +108,13 @@ func TestLoad(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "empty HTTP address is rejected",
+			env: map[string]string{
+				envHTTPAddress: "",
+			},
+			wantErr: true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -140,6 +152,7 @@ func clearConfigEnvironment(t *testing.T) {
 		envEnvironment,
 		envLogLevel,
 		envShutdownTimeout,
+		envHTTPAddress,
 	} {
 		oldValue, existed := os.LookupEnv(name)
 

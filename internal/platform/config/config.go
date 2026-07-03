@@ -11,10 +11,12 @@ const (
 	defaultEnvironment     = "local"
 	defaultLogLevel        = "info"
 	defaultShutdownTimeout = 10 * time.Second
+	defaultHTTPAddress     = ":8080"
 
 	envEnvironment     = "PULSEWARDEN_ENV"
 	envLogLevel        = "PULSEWARDEN_LOG_LEVEL"
 	envShutdownTimeout = "PULSEWARDEN_SHUTDOWN_TIMEOUT"
+	envHTTPAddress     = "PULSEWARDEN_HTTP_ADDRESS"
 
 	minShutdownTimeout = time.Second
 	maxShutdownTimeout = 2 * time.Minute
@@ -42,6 +44,7 @@ type Config struct {
 	Environment     string
 	LogLevel        string
 	ShutdownTimeout time.Duration
+	HTTPAddress     string
 }
 
 func Load() (Config, error) {
@@ -50,6 +53,9 @@ func Load() (Config, error) {
 	shutdownTimeoutValue := envOrDefault(
 		envShutdownTimeout,
 		defaultShutdownTimeout.String(),
+	)
+	httpAddress := strings.TrimSpace(
+		envOrDefault(envHTTPAddress, defaultHTTPAddress),
 	)
 
 	environment = strings.ToLower(strings.TrimSpace(environment))
@@ -99,10 +105,15 @@ func Load() (Config, error) {
 		)
 	}
 
+	if httpAddress == "" {
+		return Config{}, fmt.Errorf("%s must not be empty", envHTTPAddress)
+	}
+
 	return Config{
 		Environment:     environment,
 		LogLevel:        logLevel,
 		ShutdownTimeout: shutdownTimeout,
+		HTTPAddress:     httpAddress,
 	}, nil
 }
 
