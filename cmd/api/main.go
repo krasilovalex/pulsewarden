@@ -3,11 +3,12 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
+	"log/slog"
 	"os"
 
 	"github.com/krasilovalex/pulsewarden/internal/platform/config"
 	"github.com/krasilovalex/pulsewarden/internal/platform/lifecycle"
+	"github.com/krasilovalex/pulsewarden/internal/platform/logger"
 )
 
 func main() {
@@ -21,22 +22,25 @@ func run() int {
 		fmt.Fprintf(os.Stderr, "load config: %v\n", err)
 		return 1
 	}
-	logger := log.New(os.Stdout, "api: ", log.LstdFlags|log.LUTC|log.Lmsgprefix)
+	log, err := logger.New(os.Stdout, cfg.LogLevel, "api")
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "create logger: %v\n", err)
+		return 1
+	}
 
 	ctx, stop := lifecycle.SignalContext(context.Background())
 	defer stop()
 
-	logger.Printf(
-		"started environment=%s log_level=%s shutdown_timeout=%s",
-		cfg.Environment,
-		cfg.LogLevel,
-		cfg.ShutdownTimeout,
+	log.Info(
+		"application started",
+		slog.String("environment", cfg.Environment),
+		slog.String("shutdown_timeout", cfg.ShutdownTimeout.String()),
 	)
 
 	<-ctx.Done()
 
-	logger.Println("shutdown requested")
-	logger.Println("stopped")
+	log.Info("shutdown requested")
+	log.Info("stopped")
 
 	return 0
 }
