@@ -90,7 +90,7 @@ func Load() (Config, error) {
 		)
 	}
 
-	if shutdownTimeout > minShutdownTimeout {
+	if shutdownTimeout > maxShutdownTimeout {
 		return Config{}, fmt.Errorf(
 
 			"%s must not exceed %s",
