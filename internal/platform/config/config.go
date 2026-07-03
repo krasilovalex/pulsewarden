@@ -1,0 +1,116 @@
+package config
+
+import (
+	"fmt"
+	"os"
+	"strings"
+	"time"
+)
+
+const (
+	defaultEnvironment     = "local"
+	defaultLogLevel        = "info"
+	defaultShutdownTimeout = 10 * time.Second
+
+	envEnvironment     = "PULSEWARDEN_ENV"
+	envLogLevel        = "PULSEWARDEN_LOG_LEVEL"
+	envShutdownTimeout = "PULSEWARDEN_SHUTDOWN_TIMEOUT"
+
+	minShutdownTimeout = time.Second
+	maxShutdownTimeout = 2 * time.Minute
+)
+
+func isValidEnvironment(value string) bool {
+	switch value {
+	case "local", "test", "staging", "production":
+		return true
+	default:
+		return false
+	}
+}
+
+func isValidLogLevel(value string) bool {
+	switch value {
+	case "debug", "info", "warn", "error":
+		return true
+	default:
+		return false
+	}
+}
+
+type Config struct {
+	Environment     string
+	LogLevel        string
+	ShutdownTimeout time.Duration
+}
+
+func Load() (Config, error) {
+	environment := envOrDefault(envEnvironment, defaultEnvironment)
+	logLevel := envOrDefault(envLogLevel, defaultLogLevel)
+	shutdownTimeoutValue := envOrDefault(
+		envShutdownTimeout,
+		defaultShutdownTimeout.String(),
+	)
+
+	environment = strings.ToLower(strings.TrimSpace(environment))
+	logLevel = strings.ToLower(strings.TrimSpace(logLevel))
+	shutdownTimeoutValue = strings.ToLower(strings.TrimSpace(shutdownTimeoutValue))
+
+	if !isValidEnvironment(environment) {
+		return Config{}, fmt.Errorf(
+			"%s contains unsupported environment %q",
+			envEnvironment,
+			environment,
+		)
+	}
+
+	if !isValidLogLevel(logLevel) {
+		return Config{}, fmt.Errorf(
+			"%s contains unsupported log level %q",
+			envLogLevel,
+			logLevel,
+		)
+	}
+
+	shutdownTimeout, err := time.ParseDuration(shutdownTimeoutValue)
+	if err != nil {
+		return Config{}, fmt.Errorf(
+			"parse %s: %w",
+			envShutdownTimeout,
+			err,
+		)
+	}
+
+	if shutdownTimeout < minShutdownTimeout {
+		return Config{}, fmt.Errorf(
+
+			"%s must be at least %s",
+			envShutdownTimeout,
+			minShutdownTimeout,
+		)
+	}
+
+	if shutdownTimeout > minShutdownTimeout {
+		return Config{}, fmt.Errorf(
+
+			"%s must not exceed %s",
+			envShutdownTimeout,
+			maxShutdownTimeout,
+		)
+	}
+
+	return Config{
+		Environment:     environment,
+		LogLevel:        logLevel,
+		ShutdownTimeout: shutdownTimeout,
+	}, nil
+}
+
+func envOrDefault(name, defaultValue string) string {
+	value, exists := os.LookupEnv(name)
+	if !exists {
+		return defaultValue
+	}
+
+	return value
+}
