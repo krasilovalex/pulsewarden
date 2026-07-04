@@ -16,40 +16,60 @@ func TestLoad(t *testing.T) {
 		{
 			name: "defaults",
 			want: Config{
-				Environment:     "local",
-				LogLevel:        "info",
-				ShutdownTimeout: 10 * time.Second,
-				HTTPAddress:     ":8080",
+				Environment:           "local",
+				LogLevel:              "info",
+				ShutdownTimeout:       10 * time.Second,
+				HTTPAddress:           ":8080",
+				HTTPReadHeaderTimeout: 5 * time.Second,
+				HTTPReadTimeout:       10 * time.Second,
+				HTTPWriteTimeout:      10 * time.Second,
+				HTTPIdleTimeout:       60 * time.Second,
 			},
 		},
 		{
 			name: "custom values",
 			env: map[string]string{
-				envEnvironment:     "production",
-				envLogLevel:        "debug",
-				envShutdownTimeout: "30s",
-				envHTTPAddress:     "127.0.0.1:9090",
+				envEnvironment:           "production",
+				envLogLevel:              "debug",
+				envShutdownTimeout:       "30s",
+				envHTTPAddress:           "127.0.0.1:9090",
+				envHTTPReadHeaderTimeout: "2s",
+				envHTTPReadTimeout:       "20s",
+				envHTTPWriteTimeout:      "25s",
+				envHTTPIdleTimeout:       "2m",
 			},
 			want: Config{
-				Environment:     "production",
-				LogLevel:        "debug",
-				ShutdownTimeout: 30 * time.Second,
-				HTTPAddress:     "127.0.0.1:9090",
+				Environment:           "production",
+				LogLevel:              "debug",
+				ShutdownTimeout:       30 * time.Second,
+				HTTPAddress:           "127.0.0.1:9090",
+				HTTPReadHeaderTimeout: 2 * time.Second,
+				HTTPReadTimeout:       20 * time.Second,
+				HTTPWriteTimeout:      25 * time.Second,
+				HTTPIdleTimeout:       2 * time.Minute,
 			},
 		},
 		{
 			name: "values are normalized",
 			env: map[string]string{
-				envEnvironment:     " Staging ",
-				envLogLevel:        " WARN ",
-				envShutdownTimeout: " 15s ",
-				envHTTPAddress:     "127.0.0.1:8081",
+				envEnvironment:           " Staging ",
+				envLogLevel:              " WARN ",
+				envShutdownTimeout:       " 15s ",
+				envHTTPAddress:           "127.0.0.1:8081",
+				envHTTPReadHeaderTimeout: "3s",
+				envHTTPReadTimeout:       "12s",
+				envHTTPWriteTimeout:      "14s",
+				envHTTPIdleTimeout:       "90s",
 			},
 			want: Config{
-				Environment:     "staging",
-				LogLevel:        "warn",
-				ShutdownTimeout: 15 * time.Second,
-				HTTPAddress:     "127.0.0.1:8081",
+				Environment:           "staging",
+				LogLevel:              "warn",
+				ShutdownTimeout:       15 * time.Second,
+				HTTPAddress:           "127.0.0.1:8081",
+				HTTPReadHeaderTimeout: 3 * time.Second,
+				HTTPReadTimeout:       12 * time.Second,
+				HTTPWriteTimeout:      14 * time.Second,
+				HTTPIdleTimeout:       90 * time.Second,
 			},
 		},
 		{
@@ -115,6 +135,34 @@ func TestLoad(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "invalid HTTP read header timeout",
+			env: map[string]string{
+				envHTTPReadHeaderTimeout: "slow",
+			},
+			wantErr: true,
+		},
+		{
+			name: "HTTP read timeout below minimum",
+			env: map[string]string{
+				envHTTPReadTimeout: "50ms",
+			},
+			wantErr: true,
+		},
+		{
+			name: "HTTP write timeout above maximum",
+			env: map[string]string{
+				envHTTPWriteTimeout: "11m",
+			},
+			wantErr: true,
+		},
+		{
+			name: "empty HTTP idle timeout is rejected",
+			env: map[string]string{
+				envHTTPIdleTimeout: "",
+			},
+			wantErr: true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -153,6 +201,10 @@ func clearConfigEnvironment(t *testing.T) {
 		envLogLevel,
 		envShutdownTimeout,
 		envHTTPAddress,
+		envHTTPReadHeaderTimeout,
+		envHTTPReadTimeout,
+		envHTTPWriteTimeout,
+		envHTTPIdleTimeout,
 	} {
 		oldValue, existed := os.LookupEnv(name)
 

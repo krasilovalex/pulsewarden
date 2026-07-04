@@ -7,7 +7,6 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
-	"time"
 
 	appapi "github.com/krasilovalex/pulsewarden/internal/app/api"
 	"github.com/krasilovalex/pulsewarden/internal/platform/config"
@@ -37,10 +36,10 @@ func run() int {
 
 	server := appapi.NewServer(appapi.ServerConfig{
 		Address:           cfg.HTTPAddress,
-		ReadHeaderTimeout: 5 * time.Second,
-		ReadTimeout:       10 * time.Second,
-		WriteTimeout:      10 * time.Second,
-		IdleTimeout:       60 * time.Second,
+		ReadHeaderTimeout: cfg.HTTPReadHeaderTimeout,
+		ReadTimeout:       cfg.HTTPReadTimeout,
+		WriteTimeout:      cfg.HTTPWriteTimeout,
+		IdleTimeout:       cfg.HTTPIdleTimeout,
 	})
 
 	serverErrors := make(chan error, 1)
@@ -54,6 +53,10 @@ func run() int {
 		slog.String("environment", cfg.Environment),
 		slog.String("address", cfg.HTTPAddress),
 		slog.String("shutdown_timeout", cfg.ShutdownTimeout.String()),
+		slog.String("http_read_header_timeout", cfg.HTTPReadHeaderTimeout.String()),
+		slog.String("http_read_timeout", cfg.HTTPReadTimeout.String()),
+		slog.String("http_write_timeout", cfg.HTTPWriteTimeout.String()),
+		slog.String("http_idle_timeout", cfg.HTTPIdleTimeout.String()),
 	)
 
 	select {
