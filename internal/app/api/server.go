@@ -3,6 +3,8 @@ package api
 import (
 	"net/http"
 	"time"
+
+	"github.com/krasilovalex/pulsewarden/internal/app/api/middleware"
 )
 
 type ServerConfig struct {
@@ -19,9 +21,11 @@ func NewServer(cfg ServerConfig) *http.Server {
 	mux.HandleFunc("GET /healthz", healthHandler)
 	mux.HandleFunc("GET /readyz", readinessHandler)
 
+	handler := middleware.RequestID(mux)
+
 	return &http.Server{
 		Addr:              cfg.Address,
-		Handler:           mux,
+		Handler:           handler,
 		ReadHeaderTimeout: cfg.ReadHeaderTimeout,
 		ReadTimeout:       cfg.ReadTimeout,
 		WriteTimeout:      cfg.WriteTimeout,
