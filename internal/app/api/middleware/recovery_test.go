@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/krasilovalex/pulsewarden/internal/app/api/response"
 )
 
 func TestRecoveryReturnsInternalServerError(t *testing.T) {
@@ -22,21 +24,46 @@ func TestRecoveryReturnsInternalServerError(t *testing.T) {
 	request := httptest.NewRequest(http.MethodGet, "/panic", nil)
 	request.Header.Set(RequestIDHeader, "test-request-id")
 
-	response := httptest.NewRecorder()
+	recorder := httptest.NewRecorder()
 
 	handler := RequestID(Recovery(log, next))
-	handler.ServeHTTP(response, request)
+	handler.ServeHTTP(recorder, request)
 
-	if response.Code != http.StatusInternalServerError {
+	if recorder.Code != http.StatusInternalServerError {
 		t.Fatalf(
 			"status code = %d, want %d",
-			response.Code,
+			recorder.Code,
 			http.StatusInternalServerError,
 		)
 	}
 
-	if got := response.Body.String(); got != "Internal Server Error\n" {
-		t.Fatalf("body = %q, want %q", got, "Internal Server Error\n")
+	var payload response.ErrorEnvelope
+
+	if err := json.Unmarshal(recorder.Body.Bytes(), &payload); err != nil {
+		t.Fatalf("decode response body: %v", err)
+	}
+
+	wantPayload := response.ErrorEnvelope{
+		Error: response.ErrorBody{
+			Code:      "internal_error",
+			Message:   "internal server error",
+			RequestID: "test-request-id",
+		},
+	}
+
+	if payload != wantPayload {
+		t.Fatalf(
+			"response payload = %+v, want %+v",
+			payload,
+			wantPayload,
+		)
+	}
+
+	if got := recorder.Header().Get("Content-Type"); got != "application/json" {
+		t.Fatalf(
+			"Content-Type = %q, want application/json",
+			got,
+		)
 	}
 
 	var entry map[string]any

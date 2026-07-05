@@ -5,6 +5,8 @@ import (
 	"log/slog"
 	"net/http"
 	"runtime/debug"
+
+	"github.com/krasilovalex/pulsewarden/internal/app/api/response"
 )
 
 func Recovery(log *slog.Logger, next http.Handler) http.Handler {
@@ -38,11 +40,20 @@ func Recovery(log *slog.Logger, next http.Handler) http.Handler {
 				return
 			}
 
-			http.Error(
+			if err := response.WriteError(
 				tracker,
-				http.StatusText(http.StatusInternalServerError),
 				http.StatusInternalServerError,
-			)
+				"internal_error",
+				"internal server error",
+				requestID,
+			); err != nil {
+				log.ErrorContext(
+					r.Context(),
+					"write panic response",
+					slog.Any("error", err),
+					slog.String("request_id", requestID),
+				)
+			}
 		}()
 
 		next.ServeHTTP(tracker, r)
