@@ -1,6 +1,7 @@
 package api
 
 import (
+	"log/slog"
 	"net/http"
 	"time"
 
@@ -13,6 +14,7 @@ type ServerConfig struct {
 	ReadTimeout       time.Duration
 	WriteTimeout      time.Duration
 	IdleTimeout       time.Duration
+	Logger            *slog.Logger
 }
 
 func NewServer(cfg ServerConfig) *http.Server {
@@ -21,7 +23,8 @@ func NewServer(cfg ServerConfig) *http.Server {
 	mux.HandleFunc("GET /healthz", healthHandler)
 	mux.HandleFunc("GET /readyz", readinessHandler)
 
-	handler := middleware.RequestID(mux)
+	handler := middleware.Recovery(cfg.Logger, mux)
+	handler = middleware.RequestID(handler)
 
 	return &http.Server{
 		Addr:              cfg.Address,

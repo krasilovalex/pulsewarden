@@ -40,6 +40,7 @@ func run() int {
 		ReadTimeout:       cfg.HTTPReadTimeout,
 		WriteTimeout:      cfg.HTTPWriteTimeout,
 		IdleTimeout:       cfg.HTTPIdleTimeout,
+		Logger:            log,
 	})
 
 	serverErrors := make(chan error, 1)
