@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -17,6 +18,14 @@ const (
 	defaultHTTPWriteTimeout      = 10 * time.Second
 	defaultHTTPIdleTimeout       = 60 * time.Second
 
+	defaultPostgresDSN              = ""
+	defaultPostgresMaxConns         = 10
+	defaultPostgresMinConns         = 1
+	defaultPostgresMaxConnLifetime  = 30 * time.Minute
+	defaultPostgresMaxConnIdleTime  = 5 * time.Minute
+	defaultPostgresConnectTimeout   = 5 * time.Second
+	defaultPostgresReadinessTimeout = 2 * time.Second
+
 	envEnvironment           = "PULSEWARDEN_ENV"
 	envLogLevel              = "PULSEWARDEN_LOG_LEVEL"
 	envShutdownTimeout       = "PULSEWARDEN_SHUTDOWN_TIMEOUT"
@@ -26,10 +35,34 @@ const (
 	envHTTPWriteTimeout      = "PULSEWARDEN_HTTP_WRITE_TIMEOUT"
 	envHTTPIdleTimeout       = "PULSEWARDEN_HTTP_IDLE_TIMEOUT"
 
+	envPostgresDSN              = "PULSEWARDEN_POSTGRES_DSN"
+	envPostgresMaxConns         = "PULSEWARDEN_POSTGRES_MAX_CONNS"
+	envPostgresMinConns         = "PULSEWARDEN_POSTGRES_MIN_CONNS"
+	envPostgresMaxConnLifetime  = "PULSEWARDEN_POSTGRES_MAX_CONN_Lifetime"
+	envPostgresMaxConnIdleTime  = "PULSEWARDEN_POSTGRES_MAX_CONN_IDLE_TIME"
+	envPostgresConnectTimeout   = "PULSEWARDEN_POSTGRES_CONNECT_TIMEOUT"
+	envPostgresReadinessTimeout = "PULSEWARDEN_POSTGRES_READINESS_TIMEOUT"
+
 	minShutdownTimeout = time.Second
 	maxShutdownTimeout = 2 * time.Minute
-	minHTTPTimeout     = 100 * time.Millisecond
-	maxHTTPTimeout     = 10 * time.Minute
+
+	minHTTPTimeout = 100 * time.Millisecond
+	maxHTTPTimeout = 10 * time.Minute
+
+	minPostgresMaxConns = 1
+	maxPostgresMaxConns = 100
+
+	minPostgresMaxConnLifetime = time.Minute
+	maxPostgresMaxConnLifetime = 24 * time.Hour
+
+	minPostgresMaxConnIdleTime = 30 * time.Second
+	maxPostgresMaxConnIdleTime = time.Hour
+
+	minPostgresConnectTimeout = 100 * time.Millisecond
+	maxPostgresConnectTimeout = 30 * time.Second
+
+	minPostgresReadinessTimeout = 100 * time.Millisecond
+	maxPostgresReadinessTimeout = 10 * time.Second
 )
 
 func isValidEnvironment(value string) bool {
@@ -59,6 +92,14 @@ type Config struct {
 	HTTPReadTimeout       time.Duration
 	HTTPWriteTimeout      time.Duration
 	HTTPIdleTimeout       time.Duration
+
+	PostgresDSN              string
+	PostgresMaxConns         int32
+	PostgresMinConns         int32
+	PostgresMaxConnLifetime  time.Duration
+	PostgresMaxConnIdleTime  time.Duration
+	PostgresConnectTimeout   time.Duration
+	PostgresReadinessTimeout time.Duration
 }
 
 func Load() (Config, error) {
@@ -71,6 +112,42 @@ func Load() (Config, error) {
 	httpAddress := strings.TrimSpace(
 		envOrDefault(envHTTPAddress, defaultHTTPAddress),
 	)
+
+	postgresDSN := strings.TrimSpace(
+		envOrDefault(envPostgresDSN, defaultPostgresDSN),
+	)
+
+	if postgresDSN == "" {
+		return Config{}, fmt.Errorf("%s must not be empty", envPostgresDSN)
+	}
+
+	postgresMaxConns, err := parseInt32Setting(
+		envPostgresMaxConns,
+		defaultPostgresMaxConns,
+		minPostgresMaxConns,
+		maxPostgresMaxConns,
+	)
+	if err != nil {
+		return Config{}, err
+	}
+
+	postgresMinConns, err := parseInt32Setting(
+		envPostgresMinConns,
+		defaultPostgresMinConns,
+		0,
+		maxPostgresMaxConns,
+	)
+	if err != nil {
+		return Config{}, err
+	}
+
+	if postgresMinConns > postgresMaxConns {
+		return Config{}, fmt.Errorf(
+			"%s must not exceed %s",
+			envPostgresMinConns,
+			envPostgresMaxConns,
+		)
+	}
 
 	environment = strings.ToLower(strings.TrimSpace(environment))
 	logLevel = strings.ToLower(strings.TrimSpace(logLevel))
@@ -163,15 +240,62 @@ func Load() (Config, error) {
 		return Config{}, err
 	}
 
+	postgresMaxConnLifetime, err := parseDurationSetting(
+		envPostgresMaxConnLifetime,
+		defaultPostgresMaxConnLifetime,
+		minPostgresMaxConnLifetime,
+		maxPostgresMaxConnLifetime,
+	)
+	if err != nil {
+		return Config{}, err
+	}
+
+	postgresMaxConnIdleTime, err := parseDurationSetting(
+		envPostgresMaxConnIdleTime,
+		defaultPostgresMaxConnIdleTime,
+		minPostgresMaxConnIdleTime,
+		maxPostgresMaxConnIdleTime,
+	)
+	if err != nil {
+		return Config{}, err
+	}
+
+	postgresConnectTimeout, err := parseDurationSetting(
+		envPostgresConnectTimeout,
+		defaultPostgresConnectTimeout,
+		minPostgresConnectTimeout,
+		maxPostgresConnectTimeout,
+	)
+	if err != nil {
+		return Config{}, err
+	}
+
+	postgresReadinessTimeout, err := parseDurationSetting(
+		envPostgresReadinessTimeout,
+		defaultPostgresReadinessTimeout,
+		minPostgresReadinessTimeout,
+		maxPostgresReadinessTimeout,
+	)
+	if err != nil {
+		return Config{}, err
+	}
+
 	return Config{
-		Environment:           environment,
-		LogLevel:              logLevel,
-		ShutdownTimeout:       shutdownTimeout,
-		HTTPAddress:           httpAddress,
-		HTTPReadTimeout:       httpReadTimeout,
-		HTTPReadHeaderTimeout: httpReadHeaderTimeout,
-		HTTPWriteTimeout:      httpWriteTimeout,
-		HTTPIdleTimeout:       httpIdleTimeout,
+		Environment:              environment,
+		LogLevel:                 logLevel,
+		ShutdownTimeout:          shutdownTimeout,
+		HTTPAddress:              httpAddress,
+		HTTPReadTimeout:          httpReadTimeout,
+		HTTPReadHeaderTimeout:    httpReadHeaderTimeout,
+		HTTPWriteTimeout:         httpWriteTimeout,
+		HTTPIdleTimeout:          httpIdleTimeout,
+		PostgresDSN:              postgresDSN,
+		PostgresMaxConns:         postgresMaxConns,
+		PostgresMinConns:         postgresMinConns,
+		PostgresMaxConnLifetime:  postgresMaxConnLifetime,
+		PostgresMaxConnIdleTime:  postgresMaxConnIdleTime,
+		PostgresConnectTimeout:   postgresConnectTimeout,
+		PostgresReadinessTimeout: postgresReadinessTimeout,
 	}, nil
 }
 
@@ -216,4 +340,40 @@ func parseDurationSetting(
 	}
 
 	return value, nil
+}
+
+func parseInt32Setting(
+	name string,
+	defaultValue int32,
+	minValue int32,
+	maxValue int32,
+) (int32, error) {
+	rawValue := strings.TrimSpace(
+		envOrDefault(name, strconv.FormatInt(int64(defaultValue), 10)),
+	)
+
+	value, err := strconv.ParseInt(rawValue, 10, 32)
+	if err != nil {
+		return 0, fmt.Errorf("parse %s: %w", name, err)
+	}
+
+	parsed := int32(value)
+
+	if parsed < minValue {
+		return 0, fmt.Errorf(
+			"%s must be at least %d",
+			name,
+			minValue,
+		)
+	}
+
+	if parsed > maxValue {
+		return 0, fmt.Errorf(
+			"%s must not exceed %d",
+			name,
+			maxValue,
+		)
+	}
+
+	return parsed, nil
 }
