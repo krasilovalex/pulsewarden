@@ -7,33 +7,9 @@ import (
 	"runtime/debug"
 )
 
-type responseTracker struct {
-	http.ResponseWriter
-	wroteHeader bool
-}
-
-func (w *responseTracker) WriteHeader(statusCode int) {
-	if w.wroteHeader {
-		return
-	}
-
-	w.wroteHeader = true
-	w.ResponseWriter.WriteHeader(statusCode)
-}
-
-func (w *responseTracker) Write(data []byte) (int, error) {
-	if !w.wroteHeader {
-		w.WriteHeader(http.StatusOK)
-	}
-
-	return w.ResponseWriter.Write(data)
-}
-
 func Recovery(log *slog.Logger, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		tracker := &responseTracker{
-			ResponseWriter: w,
-		}
+		tracker := trackResponse(w)
 
 		defer func() {
 			recovered := recover()
@@ -41,7 +17,8 @@ func Recovery(log *slog.Logger, next http.Handler) http.Handler {
 				return
 			}
 
-			if err, ok := recovered.(error); ok && errors.Is(err, http.ErrAbortHandler) {
+			if err, ok := recovered.(error); ok &&
+				errors.Is(err, http.ErrAbortHandler) {
 				panic(http.ErrAbortHandler)
 			}
 

@@ -2,6 +2,7 @@ package api
 
 import (
 	"io"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -25,7 +26,13 @@ func TestHealthEndpoints(t *testing.T) {
 		},
 	}
 
-	server := NewServer(ServerConfig{})
+	testLogger := slog.New(
+		slog.NewJSONHandler(io.Discard, nil),
+	)
+
+	server := NewServer(ServerConfig{
+		Logger: testLogger,
+	})
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

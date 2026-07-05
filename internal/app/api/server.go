@@ -23,7 +23,10 @@ func NewServer(cfg ServerConfig) *http.Server {
 	mux.HandleFunc("GET /healthz", healthHandler)
 	mux.HandleFunc("GET /readyz", readinessHandler)
 
-	handler := middleware.Recovery(cfg.Logger, mux)
+	var handler http.Handler = mux
+
+	handler = middleware.Recovery(cfg.Logger, handler)
+	handler = middleware.AccessLog(cfg.Logger, handler)
 	handler = middleware.RequestID(handler)
 
 	return &http.Server{
