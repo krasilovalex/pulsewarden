@@ -22,7 +22,7 @@ func run() int {
 		fmt.Fprintf(os.Stderr, "load config: %v\n", err)
 		return 1
 	}
-	log, err := logger.New(os.Stdout, cfg.LogLevel, "worker")
+	log, err := logger.New(os.Stdout, cfg.Logging.Level, "worker")
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "create logger: %v\n", err)
 		return 1
@@ -34,7 +34,7 @@ func run() int {
 	log.Info(
 		"application started",
 		slog.String("environment", cfg.Environment),
-		slog.String("shutdown_timeout", cfg.ShutdownTimeout.String()),
+		slog.String("shutdown_timeout", cfg.Shutdown.Timeout.String()),
 	)
 
 	<-ctx.Done()

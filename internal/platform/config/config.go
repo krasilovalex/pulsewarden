@@ -84,22 +84,37 @@ func isValidLogLevel(value string) bool {
 }
 
 type Config struct {
-	Environment           string
-	LogLevel              string
-	ShutdownTimeout       time.Duration
-	HTTPAddress           string
-	HTTPReadHeaderTimeout time.Duration
-	HTTPReadTimeout       time.Duration
-	HTTPWriteTimeout      time.Duration
-	HTTPIdleTimeout       time.Duration
+	Environment string
+	Logging     LoggingConfig
+	Shutdown    ShutdownConfig
+	HTTP        HTTPConfig
+	Postgres    PostgresConfig
+}
 
-	PostgresDSN              string
-	PostgresMaxConns         int32
-	PostgresMinConns         int32
-	PostgresMaxConnLifetime  time.Duration
-	PostgresMaxConnIdleTime  time.Duration
-	PostgresConnectTimeout   time.Duration
-	PostgresReadinessTimeout time.Duration
+type LoggingConfig struct {
+	Level string
+}
+
+type ShutdownConfig struct {
+	Timeout time.Duration
+}
+
+type HTTPConfig struct {
+	Address           string
+	ReadHeaderTimeout time.Duration
+	ReadTimeout       time.Duration
+	WriteTimeout      time.Duration
+	IdleTimeout       time.Duration
+}
+
+type PostgresConfig struct {
+	DSN              string
+	MaxConns         int32
+	MinConns         int32
+	MaxConnLifetime  time.Duration
+	MaxConnIdleTime  time.Duration
+	ConnectTimeout   time.Duration
+	ReadinessTimeout time.Duration
 }
 
 func Load() (Config, error) {
@@ -281,21 +296,29 @@ func Load() (Config, error) {
 	}
 
 	return Config{
-		Environment:              environment,
-		LogLevel:                 logLevel,
-		ShutdownTimeout:          shutdownTimeout,
-		HTTPAddress:              httpAddress,
-		HTTPReadTimeout:          httpReadTimeout,
-		HTTPReadHeaderTimeout:    httpReadHeaderTimeout,
-		HTTPWriteTimeout:         httpWriteTimeout,
-		HTTPIdleTimeout:          httpIdleTimeout,
-		PostgresDSN:              postgresDSN,
-		PostgresMaxConns:         postgresMaxConns,
-		PostgresMinConns:         postgresMinConns,
-		PostgresMaxConnLifetime:  postgresMaxConnLifetime,
-		PostgresMaxConnIdleTime:  postgresMaxConnIdleTime,
-		PostgresConnectTimeout:   postgresConnectTimeout,
-		PostgresReadinessTimeout: postgresReadinessTimeout,
+		Environment: environment,
+		Logging: LoggingConfig{
+			Level: logLevel,
+		},
+		Shutdown: ShutdownConfig{
+			Timeout: shutdownTimeout,
+		},
+		HTTP: HTTPConfig{
+			Address:           httpAddress,
+			ReadHeaderTimeout: httpReadHeaderTimeout,
+			ReadTimeout:       httpReadTimeout,
+			WriteTimeout:      httpWriteTimeout,
+			IdleTimeout:       httpIdleTimeout,
+		},
+		Postgres: PostgresConfig{
+			DSN:              postgresDSN,
+			MaxConns:         postgresMaxConns,
+			MinConns:         postgresMinConns,
+			MaxConnLifetime:  postgresMaxConnLifetime,
+			MaxConnIdleTime:  postgresMaxConnIdleTime,
+			ConnectTimeout:   postgresConnectTimeout,
+			ReadinessTimeout: postgresReadinessTimeout,
+		},
 	}, nil
 }
 

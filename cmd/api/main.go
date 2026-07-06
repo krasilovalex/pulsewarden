@@ -25,7 +25,7 @@ func run() int {
 		fmt.Fprintf(os.Stderr, "load config: %v\n", err)
 		return 1
 	}
-	log, err := logger.New(os.Stdout, cfg.LogLevel, "api")
+	log, err := logger.New(os.Stdout, cfg.Logging.Level, "api")
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "create logger: %v\n", err)
 		return 1
@@ -35,11 +35,11 @@ func run() int {
 	defer stop()
 
 	server := appapi.NewServer(appapi.ServerConfig{
-		Address:           cfg.HTTPAddress,
-		ReadHeaderTimeout: cfg.HTTPReadHeaderTimeout,
-		ReadTimeout:       cfg.HTTPReadTimeout,
-		WriteTimeout:      cfg.HTTPWriteTimeout,
-		IdleTimeout:       cfg.HTTPIdleTimeout,
+		Address:           cfg.HTTP.Address,
+		ReadHeaderTimeout: cfg.HTTP.ReadHeaderTimeout,
+		ReadTimeout:       cfg.HTTP.ReadTimeout,
+		WriteTimeout:      cfg.HTTP.WriteTimeout,
+		IdleTimeout:       cfg.HTTP.IdleTimeout,
 		Logger:            log,
 	})
 
@@ -52,12 +52,12 @@ func run() int {
 	log.Info(
 		"HTTP server started",
 		slog.String("environment", cfg.Environment),
-		slog.String("address", cfg.HTTPAddress),
-		slog.String("shutdown_timeout", cfg.ShutdownTimeout.String()),
-		slog.String("http_read_header_timeout", cfg.HTTPReadHeaderTimeout.String()),
-		slog.String("http_read_timeout", cfg.HTTPReadTimeout.String()),
-		slog.String("http_write_timeout", cfg.HTTPWriteTimeout.String()),
-		slog.String("http_idle_timeout", cfg.HTTPIdleTimeout.String()),
+		slog.String("address", cfg.HTTP.Address),
+		slog.String("shutdown_timeout", cfg.Shutdown.Timeout.String()),
+		slog.String("http_read_header_timeout", cfg.HTTP.ReadHeaderTimeout.String()),
+		slog.String("http_read_timeout", cfg.HTTP.ReadTimeout.String()),
+		slog.String("http_write_timeout", cfg.HTTP.WriteTimeout.String()),
+		slog.String("http_idle_timeout", cfg.HTTP.IdleTimeout.String()),
 	)
 
 	select {
@@ -71,7 +71,7 @@ func run() int {
 
 		shutdownCtx, cancel := context.WithTimeout(
 			context.Background(),
-			cfg.ShutdownTimeout,
+			cfg.Shutdown.Timeout,
 		)
 		defer cancel()
 
