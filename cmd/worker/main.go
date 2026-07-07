@@ -9,6 +9,7 @@ import (
 	"github.com/krasilovalex/pulsewarden/internal/platform/config"
 	"github.com/krasilovalex/pulsewarden/internal/platform/lifecycle"
 	"github.com/krasilovalex/pulsewarden/internal/platform/logger"
+	"github.com/krasilovalex/pulsewarden/internal/platform/postgres"
 )
 
 func main() {
@@ -30,6 +31,16 @@ func run() int {
 
 	ctx, stop := lifecycle.SignalContext(context.Background())
 	defer stop()
+
+	pool, err := postgres.Open(ctx, cfg.Postgres)
+	if err != nil {
+		log.Error(
+			"initialize PostgreSQL",
+			slog.Any("error", err),
+		)
+		return 1
+	}
+	defer pool.Close()
 
 	log.Info(
 		"application started",
