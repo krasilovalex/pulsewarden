@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"log/slog"
 	"net/http"
 	"time"
@@ -8,20 +9,29 @@ import (
 	"github.com/krasilovalex/pulsewarden/internal/app/api/middleware"
 )
 
+type ReadinessChecker interface {
+	Ping(context.Context) error
+}
+
 type ServerConfig struct {
 	Address           string
 	ReadHeaderTimeout time.Duration
 	ReadTimeout       time.Duration
 	WriteTimeout      time.Duration
 	IdleTimeout       time.Duration
+	ReadinessTimeout  time.Duration
 	Logger            *slog.Logger
+	Postgres          ReadinessChecker
 }
 
 func NewServer(cfg ServerConfig) *http.Server {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("GET /healthz", healthHandler)
-	mux.HandleFunc("GET /readyz", readinessHandler)
+	mux.HandleFunc(
+		"GET /readyz",
+		readinessHandler(cfg.Postgres, cfg.ReadinessTimeout),
+	)
 
 	var handler http.Handler = mux
 
@@ -43,8 +53,24 @@ func healthHandler(w http.ResponseWriter, _ *http.Request) {
 	writeStatus(w, http.StatusOK, `{"status":"ok"}`)
 }
 
-func readinessHandler(w http.ResponseWriter, _ *http.Request) {
-	writeStatus(w, http.StatusOK, `{"status":"ready"}`)
+func readinessHandler(checker ReadinessChecker, timeout time.Duration) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		if checker == nil {
+			writeStatus(w, http.StatusServiceUnavailable, `{"status":"unavailable"}`)
+			return
+		}
+
+		ctx, cancel := context.WithTimeout(r.Context(), timeout)
+		defer cancel()
+
+		if err := checker.Ping(ctx); err != nil {
+			writeStatus(w, http.StatusServiceUnavailable, `{"status":"unavailable"}`)
+			return
+		}
+
+		writeStatus(w, http.StatusOK, `{"status":"ready"}`)
+	}
 }
 
 func writeStatus(w http.ResponseWriter, status int, body string) {

@@ -51,7 +51,9 @@ func run() int {
 		ReadTimeout:       cfg.HTTP.ReadTimeout,
 		WriteTimeout:      cfg.HTTP.WriteTimeout,
 		IdleTimeout:       cfg.HTTP.IdleTimeout,
+		ReadinessTimeout:  cfg.Postgres.ReadinessTimeout,
 		Logger:            log,
+		Postgres:          pool,
 	})
 
 	serverErrors := make(chan error, 1)

@@ -1,12 +1,20 @@
 package api
 
 import (
+	"context"
 	"io"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 )
+
+type readinessCheckerFunc func(context.Context) error
+
+func (f readinessCheckerFunc) Ping(ctx context.Context) error {
+	return f(ctx)
+}
 
 func TestHealthEndpoints(t *testing.T) {
 	tests := []struct {
@@ -31,7 +39,11 @@ func TestHealthEndpoints(t *testing.T) {
 	)
 
 	server := NewServer(ServerConfig{
-		Logger: testLogger,
+		Logger:           testLogger,
+		ReadinessTimeout: time.Second,
+		Postgres: readinessCheckerFunc(func(context.Context) error {
+			return nil
+		}),
 	})
 
 	for _, tt := range tests {
