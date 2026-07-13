@@ -13,6 +13,8 @@ import (
 	"github.com/krasilovalex/pulsewarden/internal/platform/lifecycle"
 	"github.com/krasilovalex/pulsewarden/internal/platform/logger"
 	"github.com/krasilovalex/pulsewarden/internal/platform/postgres"
+	repositorypostgres "github.com/krasilovalex/pulsewarden/internal/repository/postgres"
+	usecasemonitor "github.com/krasilovalex/pulsewarden/internal/usecase/monitor"
 )
 
 func main() {
@@ -42,6 +44,9 @@ func run() int {
 	}
 	defer pool.Close()
 
+	monitorRepository := repositorypostgres.NewMonitorRepository(pool)
+	createMonitor := usecasemonitor.NewCreate(monitorRepository)
+
 	ctx, stop := lifecycle.SignalContext(context.Background())
 	defer stop()
 
@@ -54,6 +59,7 @@ func run() int {
 		ReadinessTimeout:  cfg.Postgres.ReadinessTimeout,
 		Logger:            log,
 		Postgres:          pool,
+		MonitorCreator:    createMonitor,
 	})
 
 	serverErrors := make(chan error, 1)

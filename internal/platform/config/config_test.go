@@ -29,7 +29,7 @@ func TestLoad(t *testing.T) {
 					Timeout: 10 * time.Second,
 				},
 				HTTP: HTTPConfig{
-					Address:           ":8080",
+					Address:           ":8081",
 					ReadHeaderTimeout: 5 * time.Second,
 					ReadTimeout:       10 * time.Second,
 					WriteTimeout:      10 * time.Second,

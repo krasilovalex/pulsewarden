@@ -12,7 +12,7 @@ const (
 	defaultEnvironment           = "local"
 	defaultLogLevel              = "info"
 	defaultShutdownTimeout       = 10 * time.Second
-	defaultHTTPAddress           = ":8080"
+	defaultHTTPAddress           = ":8081"
 	defaultHTTPReadHeaderTimeout = 5 * time.Second
 	defaultHTTPReadTimeout       = 10 * time.Second
 	defaultHTTPWriteTimeout      = 10 * time.Second

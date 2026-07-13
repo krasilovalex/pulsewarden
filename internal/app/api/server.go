@@ -7,10 +7,18 @@ import (
 	"time"
 
 	"github.com/krasilovalex/pulsewarden/internal/app/api/middleware"
+	domainmonitor "github.com/krasilovalex/pulsewarden/internal/domain/monitor"
 )
 
 type ReadinessChecker interface {
 	Ping(context.Context) error
+}
+
+type MonitorCreator interface {
+	Execute(
+		context.Context,
+		domainmonitor.NewMonitor,
+	) (domainmonitor.Monitor, error)
 }
 
 type ServerConfig struct {
@@ -22,6 +30,7 @@ type ServerConfig struct {
 	ReadinessTimeout  time.Duration
 	Logger            *slog.Logger
 	Postgres          ReadinessChecker
+	MonitorCreator    MonitorCreator
 }
 
 func NewServer(cfg ServerConfig) *http.Server {
@@ -32,6 +41,7 @@ func NewServer(cfg ServerConfig) *http.Server {
 		"GET /readyz",
 		readinessHandler(cfg.Postgres, cfg.ReadinessTimeout),
 	)
+	mux.HandleFunc("POST /api/v1/monitors", createMonitorHandler(cfg.Logger, cfg.MonitorCreator))
 
 	var handler http.Handler = mux
 
