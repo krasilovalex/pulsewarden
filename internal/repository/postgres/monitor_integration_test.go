@@ -153,6 +153,64 @@ func TestMonitorRepositoryIntegration(t *testing.T) {
 			)
 		}
 	})
+
+	t.Run("list monitors", func(t *testing.T) {
+		cleanMonitorsTable(t, pool)
+
+		first, err := repository.Create(
+			context.Background(),
+			monitor.NewMonitor{
+				Name:     "First",
+				URL:      "https://example.com/1",
+				Interval: 30 * time.Second,
+				Timeout:  time.Second,
+				Enabled:  true,
+			},
+		)
+
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		second, err := repository.Create(
+			context.Background(),
+			monitor.NewMonitor{
+				Name:     "Second",
+				URL:      "https://example.com/2",
+				Interval: 30 * time.Second,
+				Timeout:  time.Second,
+				Enabled:  true,
+			},
+		)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		result, err := repository.List(context.Background())
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if len(result) != 2 {
+			t.Fatalf("count - %d, want 2", len(result))
+		}
+
+		if result[0].ID != second.ID {
+			t.Fatalf(
+				"first item = %s, want %s",
+				result[0].ID,
+				second.ID,
+			)
+		}
+
+		if result[1].ID != first.ID {
+			t.Fatalf(
+				"second item = %s, want %s",
+				result[1].ID,
+				first.ID,
+			)
+		}
+	})
 }
 
 func cleanMonitorsTable(

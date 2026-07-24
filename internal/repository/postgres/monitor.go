@@ -126,6 +126,67 @@ func (r *MonitorRepository) GetByID(ctx context.Context, id uuid.UUID) (monitor.
 	return result, nil
 }
 
+func (r *MonitorRepository) List(ctx context.Context) ([]monitor.Monitor, error) {
+	query, args, err := r.builder.
+		Select(
+			"id",
+			"name",
+			"url",
+			"method",
+			"interval_seconds",
+			"timeout_milliseconds",
+			"expected_status_from",
+			"expected_status_to",
+			"enabled",
+			"next_check_at",
+			"created_at",
+			"updated_at",
+		).
+		From("monitors").
+		OrderBy("created_at DESC", "id DESC").
+		ToSql()
+
+	if err != nil {
+		return nil, fmt.Errorf(
+			"build list monitors query: %w",
+			err,
+		)
+	}
+
+	rows, err := r.pool.Query(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf(
+			"list monitors: %w",
+			err,
+		)
+	}
+	defer rows.Close()
+
+	monitors := make([]monitor.Monitor, 0)
+
+	for rows.Next() {
+		item, err := scanMonitor(rows)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"scan monitor: %w",
+				err,
+			)
+		}
+
+		monitors = append(monitors, item)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf(
+			"iterate monitors: %w",
+			err,
+		)
+	}
+
+	return monitors, nil
+
+}
+
 type rowScanner interface {
 	Scan(dest ...any) error
 }

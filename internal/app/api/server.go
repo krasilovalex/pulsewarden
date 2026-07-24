@@ -31,6 +31,11 @@ type ServerConfig struct {
 	Logger            *slog.Logger
 	Postgres          ReadinessChecker
 	MonitorCreator    MonitorCreator
+	MonitorLister     MonitorLister
+}
+
+type MonitorLister interface {
+	Execute(context.Context) ([]domainmonitor.Monitor, error)
 }
 
 func NewServer(cfg ServerConfig) *http.Server {
@@ -42,6 +47,10 @@ func NewServer(cfg ServerConfig) *http.Server {
 		readinessHandler(cfg.Postgres, cfg.ReadinessTimeout),
 	)
 	mux.HandleFunc("POST /api/v1/monitors", createMonitorHandler(cfg.Logger, cfg.MonitorCreator))
+	mux.HandleFunc(
+		"GET /api/v1/monitors",
+		listMonitorsHandler(cfg.Logger, cfg.MonitorLister),
+	)
 
 	var handler http.Handler = mux
 

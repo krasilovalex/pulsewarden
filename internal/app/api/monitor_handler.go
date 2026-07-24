@@ -1,7 +1,6 @@
 package api
 
 import (
-	"encoding/json"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -76,25 +75,32 @@ func createMonitorHandler(
 	}
 }
 
-func writeMonitorCreated(w http.ResponseWriter, created domainmonitor.Monitor) {
+func writeMonitorCreated(
+	w http.ResponseWriter,
+	created domainmonitor.Monitor,
+) {
+	_ = response.WriteJSON(
+		w,
+		http.StatusCreated,
+		monitorToResponse(created),
+	)
+}
 
-	response := createMonitorResponse{
-		ID:                  created.ID.String(),
-		Name:                created.Name,
-		URL:                 created.URL,
-		Method:              created.Method,
-		IntervalSeconds:     int64(created.Interval.Seconds()),
-		TimeoutMilliseconds: created.Timeout.Milliseconds(),
-		ExpectedStatusFrom:  created.ExpectedStatusFrom,
-		ExpectedStatusTo:    created.ExpectedStatusTo,
-		Enabled:             created.Enabled,
-		NextCheckAt:         created.NextCheckAt.UTC().Format(time.RFC3339Nano),
-		CreatedAt:           created.CreatedAt.UTC().Format(time.RFC3339Nano),
-		UpdatedAt:           created.UpdatedAt.UTC().Format(time.RFC3339Nano),
+func monitorToResponse(
+	item domainmonitor.Monitor,
+) createMonitorResponse {
+	return createMonitorResponse{
+		ID:                  item.ID.String(),
+		Name:                item.Name,
+		URL:                 item.URL,
+		Method:              item.Method,
+		IntervalSeconds:     int64(item.Interval.Seconds()),
+		TimeoutMilliseconds: item.Timeout.Milliseconds(),
+		ExpectedStatusFrom:  item.ExpectedStatusFrom,
+		ExpectedStatusTo:    item.ExpectedStatusTo,
+		Enabled:             item.Enabled,
+		NextCheckAt:         item.NextCheckAt.UTC().Format(time.RFC3339Nano),
+		CreatedAt:           item.CreatedAt.UTC().Format(time.RFC3339Nano),
+		UpdatedAt:           item.UpdatedAt.UTC().Format(time.RFC3339Nano),
 	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-
-	_ = json.NewEncoder(w).Encode(response)
 }
