@@ -47,7 +47,7 @@ func getMonitorHandler(
 					w,
 					http.StatusNotFound,
 					"monitor_not_found",
-					"monitor_not_found",
+					"monitor not found",
 					requestID,
 				)
 				return
