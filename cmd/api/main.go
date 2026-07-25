@@ -47,6 +47,7 @@ func run() int {
 	monitorRepository := repositorypostgres.NewMonitorRepository(pool)
 	createMonitor := usecasemonitor.NewCreate(monitorRepository)
 	listMonitors := usecasemonitor.NewList(monitorRepository)
+	getMonitor := usecasemonitor.NewGet(monitorRepository)
 
 	ctx, stop := lifecycle.SignalContext(context.Background())
 	defer stop()
@@ -62,6 +63,7 @@ func run() int {
 		Postgres:          pool,
 		MonitorCreator:    createMonitor,
 		MonitorLister:     listMonitors,
+		MonitorGetter:     getMonitor,
 	})
 
 	serverErrors := make(chan error, 1)

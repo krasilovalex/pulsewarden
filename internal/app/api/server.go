@@ -32,6 +32,7 @@ type ServerConfig struct {
 	Postgres          ReadinessChecker
 	MonitorCreator    MonitorCreator
 	MonitorLister     MonitorLister
+	MonitorGetter     MonitorGetter
 }
 
 type MonitorLister interface {
@@ -50,6 +51,11 @@ func NewServer(cfg ServerConfig) *http.Server {
 	mux.HandleFunc(
 		"GET /api/v1/monitors",
 		listMonitorsHandler(cfg.Logger, cfg.MonitorLister),
+	)
+
+	mux.HandleFunc(
+		"GET /api/v1/monitors/{id}",
+		getMonitorHandler(cfg.Logger, cfg.MonitorGetter),
 	)
 
 	var handler http.Handler = mux
