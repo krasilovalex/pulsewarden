@@ -51,23 +51,69 @@ func NormalizeAndValidate(
 		input.NextCheckAt = input.NextCheckAt.UTC()
 	}
 
-	if err := validateName(input.Name); err != nil {
+	if err := validate(input); err != nil {
 		return NewMonitor{}, err
+	}
+
+	return input, nil
+}
+
+func NormalizeAndValidateUpdate(
+	current Monitor,
+	update UpdateMonitor,
+	now time.Time,
+) (Monitor, error) {
+	if update.IsEmpty() {
+		return Monitor{}, validationError(
+			"update",
+			"must contain at least one field",
+		)
+	}
+
+	update.Apply(&current)
+
+	current.Name = strings.TrimSpace(current.Name)
+	current.URL = strings.TrimSpace(current.URL)
+	current.Method = strings.ToUpper(strings.TrimSpace(current.Method))
+	current.UpdatedAt = now.UTC()
+
+	input := NewMonitor{
+		Name:               current.Name,
+		URL:                current.URL,
+		Method:             current.Method,
+		Interval:           current.Interval,
+		Timeout:            current.Timeout,
+		ExpectedStatusFrom: current.ExpectedStatusFrom,
+		ExpectedStatusTo:   current.ExpectedStatusTo,
+		Enabled:            current.Enabled,
+		NextCheckAt:        current.NextCheckAt,
+	}
+
+	if err := validate(input); err != nil {
+		return Monitor{}, err
+	}
+
+	return current, nil
+}
+
+func validate(input NewMonitor) error {
+	if err := validateName(input.Name); err != nil {
+		return err
 	}
 
 	if err := validateURL(input.URL); err != nil {
-		return NewMonitor{}, err
+		return err
 	}
 
 	if input.Method != http.MethodGet {
-		return NewMonitor{}, validationError(
+		return validationError(
 			"method",
 			"only GET is supported",
 		)
 	}
 
 	if input.Interval < MinInterval || input.Interval > MaxInterval {
-		return NewMonitor{}, validationError(
+		return validationError(
 			"interval",
 			fmt.Sprintf(
 				"must be between %s and %s",
@@ -78,7 +124,7 @@ func NormalizeAndValidate(
 	}
 
 	if input.Timeout < MinTimeout || input.Timeout > MaxTimeout {
-		return NewMonitor{}, validationError(
+		return validationError(
 			"timeout",
 			fmt.Sprintf(
 				"must be between %s and %s",
@@ -89,7 +135,7 @@ func NormalizeAndValidate(
 	}
 
 	if input.Timeout >= input.Interval {
-		return NewMonitor{}, validationError(
+		return validationError(
 			"timeout",
 			"must be less than interval",
 		)
@@ -97,7 +143,7 @@ func NormalizeAndValidate(
 
 	if input.ExpectedStatusFrom < 100 ||
 		input.ExpectedStatusFrom > 599 {
-		return NewMonitor{}, validationError(
+		return validationError(
 			"expected_status_from",
 			"must be between 100 and 599",
 		)
@@ -105,20 +151,20 @@ func NormalizeAndValidate(
 
 	if input.ExpectedStatusTo < 100 ||
 		input.ExpectedStatusTo > 599 {
-		return NewMonitor{}, validationError(
+		return validationError(
 			"expected_status_to",
 			"must be between 100 and 599",
 		)
 	}
 
 	if input.ExpectedStatusFrom > input.ExpectedStatusTo {
-		return NewMonitor{}, validationError(
+		return validationError(
 			"expected_status_to",
 			"must be greater than or equal to expected_status_from",
 		)
 	}
 
-	return input, nil
+	return nil
 }
 
 func validateName(name string) error {

@@ -6,6 +6,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 func TestNormalizeAndValidate(t *testing.T) {
@@ -268,4 +270,127 @@ func TestNormalizeAndValidateAppliesDefaults(t *testing.T) {
 			result.NextCheckAt.Location(),
 		)
 	}
+}
+
+func TestNormalizeAndValidateUpdate(t *testing.T) {
+	now := time.Date(
+		2026,
+		time.July,
+		25,
+		13,
+		0,
+		0,
+		0,
+		time.UTC,
+	)
+
+	current := Monitor{
+		ID:                 uuid.New(),
+		Name:               "Old API",
+		URL:                "https://example.com/health",
+		Method:             "GET",
+		Interval:           30 * time.Second,
+		Timeout:            1500 * time.Millisecond,
+		ExpectedStatusFrom: 200,
+		ExpectedStatusTo:   299,
+		Enabled:            true,
+		NextCheckAt:        now.Add(time.Minute),
+		CreatedAt:          now.Add(-time.Hour),
+		UpdatedAt:          now.Add(-time.Hour),
+	}
+
+	t.Run("applies and normalizes update", func(t *testing.T) {
+		name := "  Updated API  "
+		method := " get "
+		enabled := false
+
+		result, err := NormalizeAndValidateUpdate(
+			current,
+			UpdateMonitor{
+				Name:    &name,
+				Method:  &method,
+				Enabled: &enabled,
+			},
+			now,
+		)
+		if err != nil {
+			t.Fatalf("NormalizeAndValidateUpdate() error = %v", err)
+		}
+
+		if result.Name != "Updated API" {
+			t.Fatalf(
+				"Name = %q, want %q",
+				result.Name,
+				"Updated API",
+			)
+		}
+
+		if result.Method != "GET" {
+			t.Fatalf(
+				"Method = %q, want %q",
+				result.Method,
+				"GET",
+			)
+		}
+
+		if result.Enabled {
+			t.Fatal("Enabled = true, want false")
+		}
+
+		if result.ID != current.ID {
+			t.Fatalf(
+				"ID = %s, want %s",
+				result.ID,
+				current.ID,
+			)
+		}
+
+		if !result.UpdatedAt.Equal(now) {
+			t.Fatalf(
+				"UpdatedAt = %s, want %s",
+				result.UpdatedAt,
+				now,
+			)
+		}
+	})
+
+	t.Run("rejects empty update", func(t *testing.T) {
+		_, err := NormalizeAndValidateUpdate(
+			current,
+			UpdateMonitor{},
+			now,
+		)
+		if err == nil {
+			t.Fatal("expected error, got nil")
+		}
+
+		if !errors.Is(err, ErrInvalidMonitor) {
+			t.Fatalf(
+				"error = %v, want ErrInvalidMonitor",
+				err,
+			)
+		}
+	})
+
+	t.Run("rejects invalid resulting monitor", func(t *testing.T) {
+		timeout := 30 * time.Second
+
+		_, err := NormalizeAndValidateUpdate(
+			current,
+			UpdateMonitor{
+				Timeout: &timeout,
+			},
+			now,
+		)
+		if err == nil {
+			t.Fatal("expected error, got nil")
+		}
+
+		if !errors.Is(err, ErrInvalidMonitor) {
+			t.Fatalf(
+				"error = %v, want ErrInvalidMonitor",
+				err,
+			)
+		}
+	})
 }
