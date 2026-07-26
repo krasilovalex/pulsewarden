@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/krasilovalex/pulsewarden/internal/platform/config"
+	"github.com/wayzzoo/pulsewarden/internal/platform/config"
 )
 
 func TestOpenRejectsInvalidDSN(t *testing.T) {

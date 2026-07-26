@@ -1,4 +1,4 @@
-module github.com/krasilovalex/pulsewarden
+module github.com/wayzzoo/pulsewarden
 
 go 1.25.5
 

@@ -3,7 +3,7 @@ package monitor
 import (
 	"context"
 
-	domainmonitor "github.com/krasilovalex/pulsewarden/internal/domain/monitor"
+	domainmonitor "github.com/wayzzoo/pulsewarden/internal/domain/monitor"
 )
 
 type ListerRepository interface {

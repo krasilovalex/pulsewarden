@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/krasilovalex/pulsewarden/internal/app/api/middleware"
-	domainmonitor "github.com/krasilovalex/pulsewarden/internal/domain/monitor"
+	"github.com/wayzzoo/pulsewarden/internal/app/api/middleware"
+	domainmonitor "github.com/wayzzoo/pulsewarden/internal/domain/monitor"
 )
 
 type ReadinessChecker interface {

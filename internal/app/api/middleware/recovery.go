@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"runtime/debug"
 
-	"github.com/krasilovalex/pulsewarden/internal/app/api/response"
+	"github.com/wayzzoo/pulsewarden/internal/app/api/response"
 )
 
 func Recovery(log *slog.Logger, next http.Handler) http.Handler {

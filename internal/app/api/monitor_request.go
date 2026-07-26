@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"time"
 
-	domainmonitor "github.com/krasilovalex/pulsewarden/internal/domain/monitor"
+	domainmonitor "github.com/wayzzoo/pulsewarden/internal/domain/monitor"
 )
 
 const maxRequestBodyBytes = 1 << 20

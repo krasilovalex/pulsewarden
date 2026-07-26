@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/krasilovalex/pulsewarden/internal/app/api/middleware"
-	"github.com/krasilovalex/pulsewarden/internal/app/api/response"
-	domainmonitor "github.com/krasilovalex/pulsewarden/internal/domain/monitor"
+	"github.com/wayzzoo/pulsewarden/internal/app/api/middleware"
+	"github.com/wayzzoo/pulsewarden/internal/app/api/response"
+	domainmonitor "github.com/wayzzoo/pulsewarden/internal/domain/monitor"
 )
 
 type createMonitorResponse struct {

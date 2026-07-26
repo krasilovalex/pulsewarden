@@ -8,13 +8,13 @@ import (
 	"net/http"
 	"os"
 
-	appapi "github.com/krasilovalex/pulsewarden/internal/app/api"
-	"github.com/krasilovalex/pulsewarden/internal/platform/config"
-	"github.com/krasilovalex/pulsewarden/internal/platform/lifecycle"
-	"github.com/krasilovalex/pulsewarden/internal/platform/logger"
-	"github.com/krasilovalex/pulsewarden/internal/platform/postgres"
-	repositorypostgres "github.com/krasilovalex/pulsewarden/internal/repository/postgres"
-	usecasemonitor "github.com/krasilovalex/pulsewarden/internal/usecase/monitor"
+	appapi "github.com/wayzzoo/pulsewarden/internal/app/api"
+	"github.com/wayzzoo/pulsewarden/internal/platform/config"
+	"github.com/wayzzoo/pulsewarden/internal/platform/lifecycle"
+	"github.com/wayzzoo/pulsewarden/internal/platform/logger"
+	"github.com/wayzzoo/pulsewarden/internal/platform/postgres"
+	repositorypostgres "github.com/wayzzoo/pulsewarden/internal/repository/postgres"
+	usecasemonitor "github.com/wayzzoo/pulsewarden/internal/usecase/monitor"
 )
 
 func main() {

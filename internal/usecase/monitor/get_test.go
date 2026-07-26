@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
-	domainmonitor "github.com/krasilovalex/pulsewarden/internal/domain/monitor"
+	domainmonitor "github.com/wayzzoo/pulsewarden/internal/domain/monitor"
 )
 
 type getterRepositoryStub struct {

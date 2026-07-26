@@ -12,8 +12,8 @@ import (
 
 	"github.com/google/uuid"
 
-	domainmonitor "github.com/krasilovalex/pulsewarden/internal/domain/monitor"
-	repositorypostgres "github.com/krasilovalex/pulsewarden/internal/repository/postgres"
+	domainmonitor "github.com/wayzzoo/pulsewarden/internal/domain/monitor"
+	repositorypostgres "github.com/wayzzoo/pulsewarden/internal/repository/postgres"
 )
 
 type monitorGetterFunc func(

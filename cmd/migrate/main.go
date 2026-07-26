@@ -9,7 +9,7 @@ import (
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
-	"github.com/krasilovalex/pulsewarden/internal/platform/config"
+	"github.com/wayzzoo/pulsewarden/internal/platform/config"
 )
 
 const defaultMigrationsPath = "file://migrations"

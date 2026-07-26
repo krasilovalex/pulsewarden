@@ -10,7 +10,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/krasilovalex/pulsewarden/internal/domain/monitor"
+	"github.com/wayzzoo/pulsewarden/internal/domain/monitor"
 )
 
 var ErrMonitorNotFound = errors.New("monitor not found")

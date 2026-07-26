@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	domainmonitor "github.com/krasilovalex/pulsewarden/internal/domain/monitor"
+	domainmonitor "github.com/wayzzoo/pulsewarden/internal/domain/monitor"
 )
 
 type listRepositoryStub struct {

@@ -7,10 +7,10 @@ import (
 	"net/http"
 
 	"github.com/google/uuid"
-	"github.com/krasilovalex/pulsewarden/internal/app/api/middleware"
-	"github.com/krasilovalex/pulsewarden/internal/app/api/response"
-	domainmonitor "github.com/krasilovalex/pulsewarden/internal/domain/monitor"
-	repositorypostgres "github.com/krasilovalex/pulsewarden/internal/repository/postgres"
+	"github.com/wayzzoo/pulsewarden/internal/app/api/middleware"
+	"github.com/wayzzoo/pulsewarden/internal/app/api/response"
+	domainmonitor "github.com/wayzzoo/pulsewarden/internal/domain/monitor"
+	repositorypostgres "github.com/wayzzoo/pulsewarden/internal/repository/postgres"
 )
 
 type MonitorGetter interface {

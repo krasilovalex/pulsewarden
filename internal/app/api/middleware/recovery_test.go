@@ -9,7 +9,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/krasilovalex/pulsewarden/internal/app/api/response"
+	"github.com/wayzzoo/pulsewarden/internal/app/api/response"
 )
 
 func TestRecoveryReturnsInternalServerError(t *testing.T) {

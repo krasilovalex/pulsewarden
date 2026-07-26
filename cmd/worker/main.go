@@ -6,10 +6,10 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/krasilovalex/pulsewarden/internal/platform/config"
-	"github.com/krasilovalex/pulsewarden/internal/platform/lifecycle"
-	"github.com/krasilovalex/pulsewarden/internal/platform/logger"
-	"github.com/krasilovalex/pulsewarden/internal/platform/postgres"
+	"github.com/wayzzoo/pulsewarden/internal/platform/config"
+	"github.com/wayzzoo/pulsewarden/internal/platform/lifecycle"
+	"github.com/wayzzoo/pulsewarden/internal/platform/logger"
+	"github.com/wayzzoo/pulsewarden/internal/platform/postgres"
 )
 
 func main() {

@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/krasilovalex/pulsewarden/internal/platform/config"
+	"github.com/wayzzoo/pulsewarden/internal/platform/config"
 )
 
 func Open(

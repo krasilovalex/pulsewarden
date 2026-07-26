@@ -4,8 +4,8 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/krasilovalex/pulsewarden/internal/app/api/middleware"
-	"github.com/krasilovalex/pulsewarden/internal/app/api/response"
+	"github.com/wayzzoo/pulsewarden/internal/app/api/middleware"
+	"github.com/wayzzoo/pulsewarden/internal/app/api/response"
 )
 
 type listMonitorsResponse struct {
