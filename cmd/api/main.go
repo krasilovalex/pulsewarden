@@ -48,6 +48,7 @@ func run() int {
 	createMonitor := usecasemonitor.NewCreate(monitorRepository)
 	listMonitors := usecasemonitor.NewList(monitorRepository)
 	getMonitor := usecasemonitor.NewGet(monitorRepository)
+	updateMonitor := usecasemonitor.NewUpdate(monitorRepository)
 
 	ctx, stop := lifecycle.SignalContext(context.Background())
 	defer stop()
@@ -64,6 +65,7 @@ func run() int {
 		MonitorCreator:    createMonitor,
 		MonitorLister:     listMonitors,
 		MonitorGetter:     getMonitor,
+		MonitorUpdater:    updateMonitor,
 	})
 
 	serverErrors := make(chan error, 1)

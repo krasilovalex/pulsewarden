@@ -33,6 +33,7 @@ type ServerConfig struct {
 	MonitorCreator    MonitorCreator
 	MonitorLister     MonitorLister
 	MonitorGetter     MonitorGetter
+	MonitorUpdater    MonitorUpdater
 }
 
 type MonitorLister interface {
@@ -56,6 +57,11 @@ func NewServer(cfg ServerConfig) *http.Server {
 	mux.HandleFunc(
 		"GET /api/v1/monitors/{id}",
 		getMonitorHandler(cfg.Logger, cfg.MonitorGetter),
+	)
+
+	mux.HandleFunc(
+		"PATCH /api/v1/monitors/{id}",
+		updateMonitorHandler(cfg.Logger, cfg.MonitorUpdater),
 	)
 
 	var handler http.Handler = mux
