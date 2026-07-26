@@ -211,6 +211,97 @@ func TestMonitorRepositoryIntegration(t *testing.T) {
 			)
 		}
 	})
+
+	t.Run("update monitor", func(t *testing.T) {
+		cleanMonitorsTable(t, pool)
+
+		created, err := repository.Create(
+			context.Background(),
+			monitor.NewMonitor{
+				Name:               "Old API",
+				URL:                "https://example.com/old",
+				Interval:           30 * time.Second,
+				Timeout:            time.Second,
+				ExpectedStatusFrom: 200,
+				ExpectedStatusTo:   299,
+				Enabled:            true,
+				NextCheckAt: time.Now().
+					UTC().
+					Truncate(time.Microsecond).
+					Add(time.Minute),
+			},
+		)
+		if err != nil {
+			t.Fatalf("create monitor: %v", err)
+		}
+
+		originalCreatedAt := created.CreatedAt
+
+		created.Name = "Updated API"
+		created.URL = "https://example.com/new"
+		created.Interval = 45 * time.Second
+		created.Timeout = 2 * time.Second
+		created.ExpectedStatusFrom = 201
+		created.ExpectedStatusTo = 204
+		created.Enabled = false
+		created.UpdatedAt = time.Now().
+			UTC().
+			Truncate(time.Microsecond).
+			Add(time.Minute)
+
+		updated, err := repository.Update(
+			context.Background(),
+			created,
+		)
+		if err != nil {
+			t.Fatalf("update monitor: %v", err)
+		}
+
+		assertMonitorEqual(t, updated, created)
+
+		if !updated.CreatedAt.Equal(originalCreatedAt) {
+			t.Fatalf(
+				"CreatedAt = %s, want unchanged %s",
+				updated.CreatedAt,
+				originalCreatedAt,
+			)
+		}
+
+		loaded, err := repository.GetByID(
+			context.Background(),
+			created.ID,
+		)
+		if err != nil {
+			t.Fatalf("get updated monitor: %v", err)
+		}
+
+		assertMonitorEqual(t, loaded, updated)
+	})
+
+	t.Run("update missing monitor", func(t *testing.T) {
+		cleanMonitorsTable(t, pool)
+
+		result, err := repository.Update(
+			context.Background(),
+			monitor.Monitor{
+				ID:                 uuid.New(),
+				Name:               "Missing",
+				URL:                "https://example.com",
+				Method:             "GET",
+				Interval:           30 * time.Second,
+				Timeout:            time.Second,
+				ExpectedStatusFrom: 200,
+				ExpectedStatusTo:   299,
+				Enabled:            true,
+				NextCheckAt:        time.Now().UTC(),
+				UpdatedAt:          time.Now().UTC(),
+			},
+		)
+
+		if !errors.Is(err, ErrMonitorNotFound) {
+			t.Fatalf("error = %v, want %v", err, result.ID)
+		}
+	})
 }
 
 func cleanMonitorsTable(

@@ -230,3 +230,70 @@ func durationSeconds(value time.Duration) int64 {
 func durationMilliseconds(value time.Duration) int64 {
 	return int64(value / time.Millisecond)
 }
+
+func (r *MonitorRepository) Update(
+	ctx context.Context,
+	input monitor.Monitor,
+) (monitor.Monitor, error) {
+	query, args, err := r.builder.
+		Update("monitors").
+		Set("name", input.Name).
+		Set("url", input.URL).
+		Set("method", input.Method).
+		Set(
+			"interval_seconds",
+			durationSeconds(input.Interval),
+		).
+		Set(
+			"timeout_milliseconds",
+			durationMilliseconds(input.Timeout),
+		).
+		Set(
+			"expected_status_from",
+			input.ExpectedStatusFrom,
+		).
+		Set(
+			"expected_status_to",
+			input.ExpectedStatusTo,
+		).
+		Set("enabled", input.Enabled).
+		Set("next_check_at", input.NextCheckAt.UTC()).
+		Set("updated_at", input.UpdatedAt.UTC()).
+		Where(sq.Eq{"id": input.ID}).
+		Suffix(`
+		RETURNING
+			id,
+			name,
+			url,
+			method,
+			interval_seconds,
+			timeout_milliseconds,
+			expected_status_from,
+			expected_status_to,
+			enabled,
+			next_check_at,
+			created_at,
+			updated_at`).
+		ToSql()
+	if err != nil {
+		return monitor.Monitor{}, fmt.Errorf(
+			"build update monitor query: %w",
+			err,
+		)
+	}
+
+	result, err := scanMonitor(
+		r.pool.QueryRow(ctx, query, args...),
+	)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return monitor.Monitor{}, ErrMonitorNotFound
+	}
+	if err != nil {
+		return monitor.Monitor{}, fmt.Errorf(
+			"update monitor: %w",
+			err,
+		)
+	}
+
+	return result, nil
+}
