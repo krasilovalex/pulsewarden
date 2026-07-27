@@ -318,7 +318,7 @@ func cleanMonitorsTable(
 
 	if _, err := pool.Exec(
 		ctx,
-		"TRUNCATE TABLE monitors",
+		"TRUNCATE TABLE check_results, monitors",
 	); err != nil {
 		t.Fatalf("truncate monitors table: %v", err)
 	}
