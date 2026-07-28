@@ -13,6 +13,63 @@ import (
 	"github.com/wayzzoo/pulsewarden/internal/domain/monitor"
 )
 
+const claimDueMonitorsQuery = `
+WITH due AS (
+	SELECT
+		id,
+		next_check_at
+	FROM monitors
+	WHERE enabled = TRUE
+		AND next_check_at <= $1
+	ORDER BY
+		next_check_at ASC,
+		id ASC
+	FOR UPDATE SKIP LOCKED
+	LIMIT $2
+),
+claimed AS (
+	UPDATE monitors AS monitor
+	SET next_check_at =
+		$1 + (
+			monitor.interval_seconds
+			* INTERVAL '1 second'
+		)
+	FROM due
+	WHERE monitor.id = due.id
+	RETURNING
+		monitor.id,
+		monitor.name,
+		monitor.url,
+		monitor.method,
+		monitor.interval_seconds,
+		monitor.timeout_milliseconds,
+		monitor.expected_status_from,
+		monitor.expected_status_to,
+		monitor.enabled,
+		monitor.next_check_at,
+		monitor.created_at,
+		monitor.updated_at
+)
+SELECT
+	claimed.id,
+	claimed.name,
+	claimed.url,
+	claimed.method,
+	claimed.interval_seconds,
+	claimed.timeout_milliseconds,
+	claimed.expected_status_from,
+	claimed.expected_status_to,
+	claimed.enabled,
+	claimed.next_check_at,
+	claimed.created_at,
+	claimed.updated_at
+FROM claimed
+JOIN due ON due.id = claimed.id
+ORDER BY
+	due.next_check_at ASC,
+	due.id ASC
+`
+
 var ErrMonitorNotFound = errors.New("monitor not found")
 
 type MonitorRepository struct {
@@ -291,6 +348,55 @@ func (r *MonitorRepository) Update(
 	if err != nil {
 		return monitor.Monitor{}, fmt.Errorf(
 			"update monitor: %w",
+			err,
+		)
+	}
+
+	return result, nil
+}
+
+func (r *MonitorRepository) ClaimDue(
+	ctx context.Context,
+	dueAt time.Time,
+	limit int,
+) ([]monitor.Monitor, error) {
+	if limit <= 0 {
+		return nil, fmt.Errorf(
+			"claim due monitors: limit must be greated than zero",
+		)
+	}
+
+	rows, err := r.pool.Query(
+		ctx,
+		claimDueMonitorsQuery,
+		dueAt.UTC(),
+		limit,
+	)
+	if err != nil {
+		return nil, fmt.Errorf(
+			"claim due monitors: %w",
+			err,
+		)
+	}
+	defer rows.Close()
+
+	result := make([]monitor.Monitor, 0, limit)
+
+	for rows.Next() {
+		item, err := scanMonitor(rows)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"scan claimed monitor: %w",
+				err,
+			)
+		}
+
+		result = append(result, item)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf(
+			"iterate claimed monitors: %w",
 			err,
 		)
 	}

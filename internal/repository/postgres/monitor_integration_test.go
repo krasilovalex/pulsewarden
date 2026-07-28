@@ -302,6 +302,206 @@ func TestMonitorRepositoryIntegration(t *testing.T) {
 			t.Fatalf("error = %v, want %v", err, result.ID)
 		}
 	})
+
+	t.Run("claim due monitors", func(t *testing.T) {
+		cleanMonitorsTable(t, pool)
+
+		claimAt := time.Now().
+			UTC().
+			Truncate(time.Microsecond)
+
+		oldestDue, err := repository.Create(
+			context.Background(),
+			monitor.NewMonitor{
+				Name:     "Oldest Due",
+				URL:      "https://example.com/oldest",
+				Interval: 30 * time.Second,
+				Timeout:  time.Second,
+				Enabled:  true,
+				NextCheckAt: claimAt.
+					Add(-2 * time.Minute),
+			},
+		)
+		if err != nil {
+			t.Fatalf("create oldest due monitor: %v", err)
+		}
+
+		secondDue, err := repository.Create(
+			context.Background(),
+			monitor.NewMonitor{
+				Name:     "Second Due",
+				URL:      "https://example.com/second",
+				Interval: 45 * time.Second,
+				Timeout:  time.Second,
+				Enabled:  true,
+				NextCheckAt: claimAt.
+					Add(-time.Minute),
+			},
+		)
+		if err != nil {
+			t.Fatalf("create second due monitor: %v", err)
+		}
+
+		future, err := repository.Create(
+			context.Background(),
+			monitor.NewMonitor{
+				Name:     "Future",
+				URL:      "https://example.com/future",
+				Interval: 30 * time.Second,
+				Timeout:  time.Second,
+				Enabled:  true,
+				NextCheckAt: claimAt.
+					Add(time.Minute),
+			},
+		)
+		if err != nil {
+			t.Fatalf("create future monitor: %v", err)
+		}
+
+		disabled, err := repository.Create(
+			context.Background(),
+			monitor.NewMonitor{
+				Name:     "Disabled",
+				URL:      "https://example.com/disabled",
+				Interval: 30 * time.Second,
+				Timeout:  time.Second,
+				Enabled:  false,
+				NextCheckAt: claimAt.
+					Add(-3 * time.Minute),
+			},
+		)
+		if err != nil {
+			t.Fatalf("create disabled monitor: %v", err)
+		}
+
+		firstBatch, err := repository.ClaimDue(
+			context.Background(),
+			claimAt,
+			1,
+		)
+		if err != nil {
+			t.Fatalf("claim first batch: %v", err)
+		}
+
+		if len(firstBatch) != 1 {
+			t.Fatalf(
+				"first batch length = %d, want 1",
+				len(firstBatch),
+			)
+		}
+
+		if firstBatch[0].ID != oldestDue.ID {
+			t.Fatalf(
+				"claimed monitor = %s, want %s",
+				firstBatch[0].ID,
+				oldestDue.ID,
+			)
+		}
+
+		expectedOldestNextCheckAt := claimAt.Add(
+			oldestDue.Interval,
+		)
+
+		if !firstBatch[0].NextCheckAt.Equal(
+			expectedOldestNextCheckAt,
+		) {
+			t.Fatalf(
+				"oldest next check at = %s, want %s",
+				firstBatch[0].NextCheckAt,
+				expectedOldestNextCheckAt,
+			)
+		}
+
+		secondBatch, err := repository.ClaimDue(
+			context.Background(),
+			claimAt,
+			10,
+		)
+		if err != nil {
+			t.Fatalf("claim second batch: %v", err)
+		}
+
+		if len(secondBatch) != 1 {
+			t.Fatalf(
+				"second batch length = %d, want 1",
+				len(secondBatch),
+			)
+		}
+
+		if secondBatch[0].ID != secondDue.ID {
+			t.Fatalf(
+				"claimed monitor = %s, want %s",
+				secondBatch[0].ID,
+				secondDue.ID,
+			)
+		}
+
+		expectedSecondNextCheckAt := claimAt.Add(
+			secondDue.Interval,
+		)
+
+		if !secondBatch[0].NextCheckAt.Equal(
+			expectedSecondNextCheckAt,
+		) {
+			t.Fatalf(
+				"second next check at = %s, want %s",
+				secondBatch[0].NextCheckAt,
+				expectedSecondNextCheckAt,
+			)
+		}
+
+		thirdBatch, err := repository.ClaimDue(
+			context.Background(),
+			claimAt,
+			10,
+		)
+		if err != nil {
+			t.Fatalf("claim third batch: %v", err)
+		}
+
+		if len(thirdBatch) != 0 {
+			t.Fatalf(
+				"third batch length = %d, want 0",
+				len(thirdBatch),
+			)
+		}
+
+		loadedFuture, err := repository.GetByID(
+			context.Background(),
+			future.ID,
+		)
+		if err != nil {
+			t.Fatalf("get future monitor: %v", err)
+		}
+
+		if !loadedFuture.NextCheckAt.Equal(
+			future.NextCheckAt,
+		) {
+			t.Fatalf(
+				"future next check at = %s, want unchanged %s",
+				loadedFuture.NextCheckAt,
+				future.NextCheckAt,
+			)
+		}
+
+		loadedDisabled, err := repository.GetByID(
+			context.Background(),
+			disabled.ID,
+		)
+		if err != nil {
+			t.Fatalf("get disabled monitor: %v", err)
+		}
+
+		if !loadedDisabled.NextCheckAt.Equal(
+			disabled.NextCheckAt,
+		) {
+			t.Fatalf(
+				"disabled next check at = %s, want unchanged %s",
+				loadedDisabled.NextCheckAt,
+				disabled.NextCheckAt,
+			)
+		}
+	})
 }
 
 func cleanMonitorsTable(
