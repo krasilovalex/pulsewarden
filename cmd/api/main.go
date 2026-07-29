@@ -14,6 +14,7 @@ import (
 	"github.com/wayzzoo/pulsewarden/internal/platform/logger"
 	"github.com/wayzzoo/pulsewarden/internal/platform/postgres"
 	repositorypostgres "github.com/wayzzoo/pulsewarden/internal/repository/postgres"
+	usecasecheck "github.com/wayzzoo/pulsewarden/internal/usecase/check"
 	usecasemonitor "github.com/wayzzoo/pulsewarden/internal/usecase/monitor"
 )
 
@@ -45,27 +46,30 @@ func run() int {
 	defer pool.Close()
 
 	monitorRepository := repositorypostgres.NewMonitorRepository(pool)
+	checkResultRepository := repositorypostgres.NewCheckResultRepository(pool)
 	createMonitor := usecasemonitor.NewCreate(monitorRepository)
 	listMonitors := usecasemonitor.NewList(monitorRepository)
 	getMonitor := usecasemonitor.NewGet(monitorRepository)
 	updateMonitor := usecasemonitor.NewUpdate(monitorRepository)
+	listMonitorResults := usecasecheck.NewListResults(monitorRepository, checkResultRepository)
 
 	ctx, stop := lifecycle.SignalContext(context.Background())
 	defer stop()
 
 	server := appapi.NewServer(appapi.ServerConfig{
-		Address:           cfg.HTTP.Address,
-		ReadHeaderTimeout: cfg.HTTP.ReadHeaderTimeout,
-		ReadTimeout:       cfg.HTTP.ReadTimeout,
-		WriteTimeout:      cfg.HTTP.WriteTimeout,
-		IdleTimeout:       cfg.HTTP.IdleTimeout,
-		ReadinessTimeout:  cfg.Postgres.ReadinessTimeout,
-		Logger:            log,
-		Postgres:          pool,
-		MonitorCreator:    createMonitor,
-		MonitorLister:     listMonitors,
-		MonitorGetter:     getMonitor,
-		MonitorUpdater:    updateMonitor,
+		Address:              cfg.HTTP.Address,
+		ReadHeaderTimeout:    cfg.HTTP.ReadHeaderTimeout,
+		ReadTimeout:          cfg.HTTP.ReadTimeout,
+		WriteTimeout:         cfg.HTTP.WriteTimeout,
+		IdleTimeout:          cfg.HTTP.IdleTimeout,
+		ReadinessTimeout:     cfg.Postgres.ReadinessTimeout,
+		Logger:               log,
+		Postgres:             pool,
+		MonitorCreator:       createMonitor,
+		MonitorLister:        listMonitors,
+		MonitorGetter:        getMonitor,
+		MonitorUpdater:       updateMonitor,
+		MonitorResultsLister: listMonitorResults,
 	})
 
 	serverErrors := make(chan error, 1)

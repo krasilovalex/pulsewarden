@@ -22,18 +22,19 @@ type MonitorCreator interface {
 }
 
 type ServerConfig struct {
-	Address           string
-	ReadHeaderTimeout time.Duration
-	ReadTimeout       time.Duration
-	WriteTimeout      time.Duration
-	IdleTimeout       time.Duration
-	ReadinessTimeout  time.Duration
-	Logger            *slog.Logger
-	Postgres          ReadinessChecker
-	MonitorCreator    MonitorCreator
-	MonitorLister     MonitorLister
-	MonitorGetter     MonitorGetter
-	MonitorUpdater    MonitorUpdater
+	Address              string
+	ReadHeaderTimeout    time.Duration
+	ReadTimeout          time.Duration
+	WriteTimeout         time.Duration
+	IdleTimeout          time.Duration
+	ReadinessTimeout     time.Duration
+	Logger               *slog.Logger
+	Postgres             ReadinessChecker
+	MonitorCreator       MonitorCreator
+	MonitorLister        MonitorLister
+	MonitorGetter        MonitorGetter
+	MonitorUpdater       MonitorUpdater
+	MonitorResultsLister MonitorResultsLister
 }
 
 type MonitorLister interface {
@@ -62,6 +63,14 @@ func NewServer(cfg ServerConfig) *http.Server {
 	mux.HandleFunc(
 		"PATCH /api/v1/monitors/{id}",
 		updateMonitorHandler(cfg.Logger, cfg.MonitorUpdater),
+	)
+
+	mux.HandleFunc(
+		"GET /api/v1/monitors/{id}/results",
+		listMonitorResultsHandler(
+			cfg.Logger,
+			cfg.MonitorResultsLister,
+		),
 	)
 
 	var handler http.Handler = mux

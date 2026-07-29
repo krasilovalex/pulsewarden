@@ -125,6 +125,225 @@ func TestCheckResultRepositoryIntegration(t *testing.T) {
 
 		assertCheckResultEqual(t, created, input)
 	})
+
+	t.Run("list results by monitor ID", func(t *testing.T) {
+		cleanMonitorsTable(t, pool)
+
+		firstMonitor := createCheckResultTestMonitor(
+			t,
+			monitorRepository,
+		)
+
+		secondMonitor := createCheckResultTestMonitor(
+			t,
+			monitorRepository,
+		)
+
+		baseTime := time.Now().
+			UTC().
+			Truncate(time.Microsecond)
+
+		statusOK := 200
+		statusUnavailable := 503
+		statusNoContent := 204
+
+		newestFirstResult, err := checkresult.New(
+			firstMonitor.ID,
+			checkresult.StatusUp,
+			&statusOK,
+			40*time.Millisecond,
+			nil,
+			baseTime.Add(2*time.Minute),
+		)
+		if err != nil {
+			t.Fatalf(
+				"create newest domain result: %v",
+				err,
+			)
+		}
+
+		newestFirstResult, err =
+			checkResultRepository.Create(
+				context.Background(),
+				newestFirstResult,
+			)
+		if err != nil {
+			t.Fatalf(
+				"persist newest first result: %v",
+				err,
+			)
+		}
+
+		oldestFirstResult, err := checkresult.New(
+			firstMonitor.ID,
+			checkresult.StatusDown,
+			&statusUnavailable,
+			120*time.Millisecond,
+			nil,
+			baseTime,
+		)
+		if err != nil {
+			t.Fatalf(
+				"create oldest domain result: %v",
+				err,
+			)
+		}
+
+		oldestFirstResult, err =
+			checkResultRepository.Create(
+				context.Background(),
+				oldestFirstResult,
+			)
+		if err != nil {
+			t.Fatalf(
+				"persist oldest first result: %v",
+				err,
+			)
+		}
+
+		secondMonitorResult, err := checkresult.New(
+			secondMonitor.ID,
+			checkresult.StatusUp,
+			&statusNoContent,
+			25*time.Millisecond,
+			nil,
+			baseTime.Add(time.Minute),
+		)
+		if err != nil {
+			t.Fatalf(
+				"create second monitor result: %v",
+				err,
+			)
+		}
+
+		_, err = checkResultRepository.Create(
+			context.Background(),
+			secondMonitorResult,
+		)
+		if err != nil {
+			t.Fatalf(
+				"persist second monitor result: %v",
+				err,
+			)
+		}
+
+		results, err :=
+			checkResultRepository.ListByMonitorID(
+				context.Background(),
+				firstMonitor.ID,
+				10,
+			)
+		if err != nil {
+			t.Fatalf(
+				"list results by monitor ID: %v",
+				err,
+			)
+		}
+
+		if len(results) != 2 {
+			t.Fatalf(
+				"results length = %d, want 2",
+				len(results),
+			)
+		}
+
+		assertCheckResultEqual(
+			t,
+			results[0],
+			newestFirstResult,
+		)
+
+		assertCheckResultEqual(
+			t,
+			results[1],
+			oldestFirstResult,
+		)
+	})
+
+	t.Run("list results respects limit", func(t *testing.T) {
+		cleanMonitorsTable(t, pool)
+
+		createdMonitor := createCheckResultTestMonitor(
+			t,
+			monitorRepository,
+		)
+
+		statusCode := 200
+		baseTime := time.Now().
+			UTC().
+			Truncate(time.Microsecond)
+
+		for index := range 3 {
+			input, err := checkresult.New(
+				createdMonitor.ID,
+				checkresult.StatusUp,
+				&statusCode,
+				time.Duration(index+1)*time.Millisecond,
+				nil,
+				baseTime.Add(
+					time.Duration(index)*time.Minute,
+				),
+			)
+			if err != nil {
+				t.Fatalf(
+					"create domain result %d: %v",
+					index,
+					err,
+				)
+			}
+
+			if _, err := checkResultRepository.Create(
+				context.Background(),
+				input,
+			); err != nil {
+				t.Fatalf(
+					"persist result %d: %v",
+					index,
+					err,
+				)
+			}
+		}
+
+		results, err :=
+			checkResultRepository.ListByMonitorID(
+				context.Background(),
+				createdMonitor.ID,
+				2,
+			)
+		if err != nil {
+			t.Fatalf(
+				"list limited results: %v",
+				err,
+			)
+		}
+
+		if len(results) != 2 {
+			t.Fatalf(
+				"results length = %d, want 2",
+				len(results),
+			)
+		}
+
+		if !results[0].CheckedAt.Equal(
+			baseTime.Add(2 * time.Minute),
+		) {
+			t.Fatalf(
+				"first checked at = %s, want %s",
+				results[0].CheckedAt,
+				baseTime.Add(2*time.Minute),
+			)
+		}
+
+		if !results[1].CheckedAt.Equal(
+			baseTime.Add(time.Minute),
+		) {
+			t.Fatalf(
+				"second checked at = %s, want %s",
+				results[1].CheckedAt,
+				baseTime.Add(time.Minute),
+			)
+		}
+	})
 }
 
 func createCheckResultTestMonitor(
